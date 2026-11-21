@@ -129,5 +129,5 @@ python scripts/verify_refs.py --csv citations.csv --only 3,5 --delay 1
 ```csv
 id,authors,year,title,venue,doi_or_url,page,verified_by,verified_on,supports
 1,Zhang S; Li Y,2023,Verifiable citations in student writing,Journal of Writing Research,10.1234/jwr.2023.15.2.101,101-120,lead,2026-11-20,引言第二句：引用核验机制有效
-2,Wang L,2021,学术写作规范,东南大学出版社,,45-60,lead,2026-11-20,分类框架一节
+2,Wang L,2021,学术写作规范,示例出版社,,45-60,lead,2026-11-20,分类框架一节
 ```

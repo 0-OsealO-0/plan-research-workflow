@@ -581,7 +581,7 @@ quick assessment / methodology focus / Socratic guided] 模式审阅论文。
 ### 馆藏核对（`opac_search.py`）
 
 ```text
-帮我确认东南大学图书馆有没有这些书 / 学位论文：[题名或 ISBN 列表]
+帮我确认我们学校图书馆有没有这些书 / 学位论文：[题名或 ISBN 列表]（馆藏目录见 institution.local.md 的 OPAC_BASE）
 
 要求：
 1. 运行 python scripts/opac_search.py --title "…" 或 --isbn …；

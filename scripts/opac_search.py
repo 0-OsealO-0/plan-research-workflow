@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Search the SEU library catalogue (opac) from the command line.
+"""Search your library catalogue (opac) from the command line.
 
 This is the *holdings* stage: it answers "does the library own this, where is
 it shelved, is a copy available". It does NOT search journal databases
@@ -19,14 +19,60 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = "https://libopac.seu.edu.cn/opac"
-RSS = f"{BASE}/search_rss.php"
+CONFIG_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "institution.local.md"
+)
+
+BASE = ""
+RSS = ""
+
+MISSING_CONFIG = """\
+还没有配置馆藏目录地址（OPAC base）。
+
+本仓库不内置任何学校的端点。三选一：
+  1) 跑 references/institution-setup.md 的首次配置，写入 institution.local.md
+  2) 设环境变量：PAPERFLOW_OPAC_BASE=https://<你的 OPAC>/opac
+  3) 临时传参：--base https://<你的 OPAC>/opac [--rss-path search_rss.php]
+
+汇文系统（libopac）地址通常形如 https://libopac.<学校域名>/opac，RSS 在 search_rss.php；
+其他系统（图创 / 超星 / Primo）通常没有 RSS，需要人工在浏览器查。"""
+
+
+def read_config() -> dict:
+    """key=value 行，来自本机的 institution.local.md（不提交）。"""
+    out = {}
+    if not os.path.isfile(CONFIG_FILE):
+        return out
+    with open(CONFIG_FILE, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            out[key.strip()] = val.strip()
+    return out
+
+
+def configure(cli_base=None, cli_rss=None) -> bool:
+    """Resolve OPAC base: --base > env > institution.local.md. False if unset."""
+    global BASE, RSS
+    cfg = read_config()
+    base = (cli_base or os.environ.get("PAPERFLOW_OPAC_BASE")
+            or cfg.get("OPAC_BASE", "")).rstrip("/")
+    if not base:
+        return False
+    BASE = base
+    rss_path = (cli_rss or os.environ.get("PAPERFLOW_OPAC_RSS")
+                or cfg.get("OPAC_RSS_PATH") or "search_rss.php").lstrip("/")
+    RSS = f"{BASE}/{rss_path}"
+    return True
 UA = "plan-research-workflow/1.0 (catalogue holdings check)"
 
 FIELD_LABELS = {
@@ -155,7 +201,7 @@ def render(rows: list[dict], total: int, field: str, text: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    p = argparse.ArgumentParser(description="Search SEU library holdings (opac).")
+    p = argparse.ArgumentParser(description="Search library holdings (opac).")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--title")
     g.add_argument("--author")
@@ -165,7 +211,13 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--publisher")
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--json", action="store_true")
+    p.add_argument("--base", help="OPAC base, e.g. https://libopac.example.edu.cn/opac")
+    p.add_argument("--rss-path", help="RSS 检索路径，默认 search_rss.php")
     args = p.parse_args(argv)
+
+    if not configure(args.base, args.rss_path):
+        print(MISSING_CONFIG, file=sys.stderr)
+        return 2
 
     field, text = "", ""
     for name in FIELD_LABELS:

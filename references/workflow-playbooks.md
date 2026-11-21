@@ -47,7 +47,7 @@ then `check.py` on the `.docx` (see SKILL.md, "Word Delivery"). The `.md` is the
 working manuscript; the `.docx` is the deliverable.
 
 Any chain that needs literature starts with `search_meta.py` (metadata + DOI) and,
-when a specific book or thesis matters, `opac_search.py` (SEU holdings); references
+when a specific book or thesis matters, `opac_search.py` (the catalogue configured in `institution.local.md`); references
 exported from CNKI / 万方 / IEEE enter through `import_refs.py` and must pass
 `verify_refs.py` before the first citation (see SKILL.md, "Literature Acquisition",
 and `references/library-access.md`).

@@ -10,3 +10,5 @@ paperflow/
 Thumbs.db
 .idea/
 .vscode/
+institution.local.md
+*.local.md

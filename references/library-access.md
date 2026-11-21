@@ -1,119 +1,107 @@
-# Literature Access: 东南大学图书馆与开放元数据
+# 文献获取：三阶段与可配置入口
 
-本文件规定"文献从哪来、哪些能自动、哪些必须人工"。它解决的是一件事：
-**不让检索结果变成看起来可信、实际没核过的引用。**
+文献工作分三层，能自动化的只有前两层的一部分：
 
-## 0. 一句话原则
-
-> 元数据走开放 API，馆藏走 OPAC，全文只能你自己登录取。
-> 任何一步没做，就不能说"我检索过"。
-
-## 1. 三条通道与边界
-
-| 通道 | 工具 | 需要登录 | 能拿到 | 拿不到 |
-|---|---|---|---|---|
-| 元数据 | `scripts/search_meta.py`（OpenAlex / Crossref） | 否 | 题名、作者、年份、刊名/会议、DOI、被引数 | 全文、页码、卷期、中文库独有文献 |
-| 馆藏 | `scripts/opac_search.py`（libopac 汇文系统） | 否 | 纸本馆藏、索书号、可借复本、东大学位论文 | 期刊论文全文、电子书正文 |
-| 全文 | 图书馆门户 → CNKI / 万方 / Elsevier / IEEE / EBSCO | **是**（统一身份认证或校园网 IP） | PDF、页码、卷期 | 自动化批量抓取（不允许） |
-
-**为什么全文不自动化**：这些库有验证码、IP/账号双认证和反爬（IEEE 实测直接返回 418）；
-绕过它们违反数据库使用许可，也让流程在最关键的一步变得不可靠。流程只做到"给你正确入口 + 正确检索式"。
-
-## 2. 入口（按可达性排序）
-
-| 资源 | 入口 | 校外（aTrust） | 校内直连 |
+| 阶段 | 工具 | 需要机构登录 | 能给什么 |
 |---|---|---|---|
-| 图书馆主站 | https://lib.seu.edu.cn/ | 可访问（公开页） | 可访问 |
-| 馆藏目录 OPAC | https://libopac.seu.edu.cn/opac/openlink.php | 可访问、免登录 | 可访问 |
-| aTrust 校外访问入口 | https://lib-seu-edu-cn.atrust.seu.edu.cn/ | 需 aTrust 会话（JS 渲染，无法直接抓取） | 不需要 |
-| 超星发现（发现系统） | https://ss.zhizhen.com/s?sw=关键词 | 需机构认证 | 校园网 IP 直接可用 |
-| 中国知网 | https://www.cnki.net/ | 需机构认证 | 校园网 IP 直接可用 |
-| 万方 | https://g.wanfangdata.com.cn/ | 需机构认证 | 校园网 IP 直接可用 |
-| EBSCO 发现（EDS） | https://search.ebscohost.com/login.aspx?authtype=ip,guest&custid=s1397862&profile=eds&bquery= | 需机构认证 | 校园网 IP 直接可用 |
-| IEEE Xplore | https://ieeexplore.ieee.org/ | 需机构认证（有反爬） | 校园网 IP 直接可用 |
+| 元数据 | `scripts/search_meta.py`（OpenAlex + Crossref） | 否 | 题名、作者、年份、刊名、DOI、被引 |
+| 馆藏 | `scripts/opac_search.py`（你的 OPAC，需配置） | 否（多数 OPAC 公开可查） | 纸本馆藏、索书号、可借复本、学位论文 |
+| 全文 | 机构数据库（CNKI / 万方 / WoS / IEEE / EBSCO） | 是 | PDF |
 
-`www.lib.seu.edu.cn` 的证书与域名不匹配（curl 报 `SEC_E_WRONG_PRINCIPAL`），
-用 `lib.seu.edu.cn` 或 `http://www.lib.seu.edu.cn/`。
+全文下载**不做自动化**：它需要你的账号、且几乎都受批量下载条款限制。自己的导出文件交给
+`import_refs.py` 变成 `citations.csv`，这是唯一进得去正文的通道。
 
-## 3. 元数据检索（可自动化）
+---
 
-```bash
-python scripts/search_meta.py "network traffic anomaly detection" --limit 10
-python scripts/search_meta.py "图神经网络 交通流预测" --limit 10 --year-from 2021
-python scripts/search_meta.py --doi 10.1038/nature12373
-python scripts/search_meta.py "topic" --source crossref --json
+## 入口配置
+
+本仓库不内置任何学校的端点。首次使用先跑 `references/institution-setup.md`，把入口写进
+`institution.local.md`（不提交）：
+
+| 键 | 用途 | 示例 |
+|---|---|---|
+| `OPAC_BASE` | 馆藏目录根地址 | `https://libopac.<学校域名>/opac` |
+| `OPAC_RSS_PATH` | RSS 检索路径（汇文系统才有） | `search_rss.php` |
+| `REMOTE_ACCESS` | 校外访问方式 | `vpn` / `webvpn` / `atrust` / `ezproxy` / `none` |
+| `DATABASES` | 常用数据库 | `CNKI,万方,Web of Science` |
+
+环境变量 `PAPERFLOW_OPAC_BASE` / `PAPERFLOW_OPAC_RSS` 优先于文件；命令行 `--base` 优先于两者。
+
+没配置时 `opac_search.py` 会打印怎么配，并以退出码 2 结束——它不会退回某个学校的默认值。
+
+---
+
+## 常见 OPAC 系统怎么认
+
+打开图书馆首页、搜一本书，看地址栏：
+
+| 系统 | 特征 | 自动化 |
+|---|---|---|
+| 汇文 libopac | 路径含 `/opac/openlink.php`，另有 `search_rss.php` 返回 RSS | 本脚本支持 |
+| 图创 / 超星 / 其他 | 路径含 `/opac/`、`/search`，结果为 JS 渲染 | 一般不支持，人工查 |
+| Primo / Alma | 域名含 `primo`、`exlibrisgroup` | 有公开 API 但要机构 key |
+| EBSCO Discovery | 域名含 `search.ebscohost.com` | 需机构认证 |
+
+判断方法：把检索结果页的 HTML 保存下来，`grep` 书名。能 grep 到就是服务端渲染，可以写解析；
+grep 不到就是 JS 渲染，别浪费时间。
+
+---
+
+## 校外访问的四种方式
+
+| 方式 | 表现 | 注意 |
+|---|---|---|
+| 校园 VPN | 连上后整机走校内 IP | 命令行工具的流量也会走 VPN |
+| WebVPN | 网址被改写成 `https://<xxx>-<域名>.webvpn...` 形式 | 有些资源不支持 WebVPN |
+| aTrust（深信服） | 本机客户端按域名转发，系统代理设置不变 | 命令行拿不到校内 IP，浏览器内正常 |
+| EZproxy | 网址前缀变成 `https://<域名>.libproxy...` | 通常能直接下载 PDF |
+
+前三者都需要**人在浏览器里登录**。agent 不要代填账号密码，也不要去解验证码；需要时请用户
+自己完成，然后把导出的 RIS/BibTeX 文件交给 `import_refs.py`。
+
+---
+
+## 命令
+
+```text
+# 元数据（无需配置，需要网络）
+python <skill>/scripts/search_meta.py "network anomaly detection" --limit 5
+python <skill>/scripts/search_meta.py --doi 10.1038/nature12373
+
+# 馆藏（需 OPAC_BASE；汇文系统才有 RSS）
+python <skill>/scripts/opac_search.py --title "机器学习" --limit 10
+python <skill>/scripts/opac_search.py --isbn 9787302423287 --base https://libopac.example.edu.cn/opac
+
+# 数据库导出 → 文献账
+python <skill>/scripts/import_refs.py export.ris --out citations.csv
 ```
 
-要点：
+---
 
-- **`--source auto` 先 OpenAlex 再 Crossref**；中文题名两边覆盖都不全，检索不到不等于不存在。
-- 结果是**候选**，不是引用。要引用必须走第 5 节。
-- OpenAlex 的中文作者名可能变成"名 姓"顺序（如"淼玉 周"），写进 CSV 前自己改。
-- 用 `--mailto 你的邮箱` 进入开放 API 的 polite pool，避免被限流。
-- 没有 DOI 的条目（常见于国内普刊）不能直接进正文，除非拿到可访问的稳定 URL。
+## 导出格式
 
-## 4. 馆藏检索（可自动化）
+优先 RIS：字段最全，各库都认。知网导出 EndNote（.enw）也能被解析；万方给 RIS；IEEE 给
+BibTeX；Web of Science 给纯文本（另存为 RIS 更省事）。导出后**一律**跑
+`verify_refs.py`——导入不等于核验。
 
-```bash
-python scripts/opac_search.py --title "机器学习" --limit 10
-python scripts/opac_search.py --author "周志华"
-python scripts/opac_search.py --keyword "交通安全"        # 可检索到东大学位论文
-python scripts/opac_search.py --isbn 9787302423287
-python scripts/opac_search.py --title "深度学习" --json
-```
+---
 
-实测（2026-11）：题名"机器学习"458 条（中文图书 438 / 西文 17 / 学位论文 3）；
-主题词"交通安全"能查到交通学院 2020 年学位论文，索书号形如 `21交通学院/D2020:22`。
-
-- 馆藏目录**只收纸本与学位论文**，不收期刊论文和电子书正文。查不到期刊论文是正常的。
-- 学位论文是本科阶段最实用的中文参考文献：同校、同方向、可馆内阅览。
-- "馆藏与借阅"链接里的 `item.php?marc_no=...` 可看具体馆藏地与借阅状态。
-
-## 5. 全文获取与导入（半自动：你导出，脚本入库）
-
-1. 用上表入口登录（校外先连 aTrust），在数据库里检索同一个关键词。
-2. 勾选需要的文献 → 导出题录，格式选 **RIS**（CNKI 选"参考文献/EndNote"，万方选 RIS，
-   IEEE 选 BibTeX，Elsevier 选 RIS，EBSCO 选 RIS）。
-3. 把导出文件丢进当前目录，然后：
-
-```bash
-python scripts/import_refs.py refs.ris --csv citations.csv --dry-run   # 先看会进什么
-python scripts/import_refs.py refs.ris --csv citations.csv
-```
-
-4. `import_refs.py` 会：自动编号、去重（按 DOI 与标题+年份）、按 GB/T 7714 类型码标注
-   `type`（J/M/C/D/R/S/P/N/EB-OL）、把 `verified_by` 留空——**它不替你核验**。
-5. 逐条核验：
-
-```bash
-python scripts/verify_refs.py --csv citations.csv              # 全量
-python scripts/verify_refs.py --csv citations.csv --only 3     # 单条
-```
-
-6. 核验 `OK` 后，才填 `verified_by`（写 `lead` 或你的名字）与 `verified_on`，
-   并在 `supports` 里写这条文献支撑正文的**哪句话**。
-
-## 6. 合规红线
-
-- 不批量下载、不整刊抓取、不共享账号、不绕过验证码或付费墙。
-- 下载只为阅读与引用，不二次分发 PDF。
-- 检索式与题录可以自动化；**全文下载保持人工、按篇**。
-- 数据库许可通常禁止"系统性下载"，违规会导致全校 IP 被封——这是实际发生过的后果。
-
-## 7. 常见失败与处理
+## 失败对照
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| IEEE 返回 418 / CNKI 跳登录 | 反爬或未认证 | 连 aTrust / 校园网，人工在浏览器打开 |
-| aTrust 页面只有 `Loading...` | 那是 JS 壳，不是站点内容 | 用浏览器打开并完成认证；不要用 curl |
-| 馆藏 0 条 | 只有电子版，或外文写法不同 | 换 `--author` / `--isbn`；期刊论文本来就查不到 |
-| DOI 查不到 | 中文普刊常无 DOI | 用可访问 URL（知网/万方详情页）+ 页码，verify 记 `MANUAL` |
-| `verify_refs.py` 报 MISMATCH | 导出元数据与 DOI 登记不一致 | 以 DOI 登记为准，修 CSV；改不动的删掉 |
-| OpenAlex 检索不到某篇中文论文 | 收录范围有限 | 用 `--source crossref` 再试，或直接在知网检索后导出 |
+| HTTP 418 / 420 / 429 | 反爬或频率限制 | 降低频率、隔几分钟再试；不要换 UA 硬刷 |
+| 页面只有 `Loading...` | JS 渲染的壳 | 用浏览器打开，账号登录后人工检索 |
+| 检索到 0 条但馆里有 | 字段选错（题名 vs 主题词）或繁体/简体差异 | 换 `--keyword`，或去掉书名号 |
+| 有书目无馆藏 | 该馆没订，或只有电子版 | 查电子书库或馆际互借 |
+| 导出无 DOI | 中文期刊多数如此 | `verify_refs.py` 会标 `MANUAL`，人工核对页码卷期 |
+| doi.org 能解析但不返回 CSL-JSON | 中文注册机构不做内容协商 | 记为 `PARTIAL`，不是错录（见 `citation-contract.md`） |
 
-## 8. 与流程其他环节的接口
+---
 
-- 引用契约：`references/citation-contract.md`（`citations.csv` 的列定义与硬规则）
-- 引用核验：`scripts/verify_refs.py`（DOI 解析 + 字段比对 + 退出码）
-- 稿件自检：`scripts/check.py --citations-csv citations.csv`
-- Word 交付：`scripts/export_docx.py --references-csv citations.csv`（顺序编码制渲染）
+## 合规红线
+
+- 不代填账号密码、不代过验证码、不绕过访问控制。
+- 不批量下载全文；一次检索取前 10–20 条即可。
+- 不把数据库导出文件原样贴进交付物——先过 `citations.csv`，再到正文。
+- 引用只认 `citations.csv` 里 `verified=y` 的行（见 `citation-contract.md`）。

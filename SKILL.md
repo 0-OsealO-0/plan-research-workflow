@@ -73,8 +73,21 @@ up an existing user file before overwriting it, and never delete anything.
 6. Read `references/example-course-report.md` when the user asks for a concrete example.
 7. Read `references/execution-protocol.md` before running any downstream skill, and decide the mode first: `execute` unless the user asks for thinking only.
 8. Before proposing a step plan, run `scripts/preflight.py --require <the chain's skills>` (rule 22).
+9. On the first use on a machine, or whenever literature access is needed and `institution.local.md` is
+   missing, run the one-time profile in `references/institution-setup.md` (school, department, discipline,
+   OPAC base, remote access, databases). Store it in the untracked `institution.local.md` and never assume
+   a school. Ask at most the three questions it lists, once.
 
 If the user's request is already specific enough, proceed with stated assumptions instead of asking many questions.
+
+## 首次使用：机构档案
+
+本 skill 不内置任何学校信息。第一次使用时先按 `references/institution-setup.md` 问三件事（学校院系 /
+学科方向 / 文献入口），写进**不提交**的 `institution.local.md`，后续会话直接复用。
+
+- 没配置时：文献检索走 `search_meta.py`（无需机构），馆藏检查降级为人工，参考文献仍按 GB/T 7714。
+- 不要在交付物里写死「某某大学图书馆」；用户没说的机构信息，问一次，不要猜。
+- 环境变量 `PAPERFLOW_OPAC_BASE` / `PAPERFLOW_OPAC_RSS` 优先于档案文件。
 
 ## Routing Rules
 
@@ -86,7 +99,7 @@ and the misjudgment table in `references/routing-checklist.md` before choosing.
 |---|---|---|
 | No clear research direction | `deep-research` | `idea-evaluator`, `academic-paper` |
 | Find papers on a topic, or the DOI of a known paper | `scripts/search_meta.py` (OpenAlex / Crossref) | `references/library-access.md` for entry points |
-| Does the library own this book or thesis, and where is it | `scripts/opac_search.py` (SEU opac) | `references/library-access.md` |
+| Does the library own this book or thesis, and where is it | `scripts/opac_search.py` (your OPAC, once configured) | `references/institution-setup.md`, then `references/library-access.md` |
 | References exported from CNKI / 万方 / IEEE need to enter the work | `scripts/import_refs.py` into `citations.csv` | `scripts/verify_refs.py` before any of them is cited |
 | User wants the plan only: filling a form, preparing a defense, or says 只给计划 | this skill in `plan` mode | none; no downstream skill writes files |
 | Specific idea needs validation | `idea-evaluator` | `tech-paper-template` or `benchmark-paper-template` |
@@ -363,13 +376,17 @@ python scripts/import_refs.py refs.ris [refs.bib ...] --csv citations.csv [--dry
 
 - **Metadata** comes from open APIs (`search_meta.py`), not from a library
   database; it yields candidates with DOI, year, venue. No login, no VPN.
-- **Holdings** come from the SEU opac (`opac_search.py`): paper copies, call
-  numbers, and SEU theses. It does not index journal articles.
-- **Full text** requires the user's own institutional login (aTrust off campus,
-  campus IP on campus). The flow supplies the entry point and the search terms;
-  it never authenticates, never bypasses a captcha or paywall, and never
-  bulk-downloads. IEEE answers 418 to bots, CNKI requires 统一身份认证, and
-  systematic downloading can get the whole campus IP blocked.
+- **Holdings** come from whatever catalogue the user configured
+  (`opac_search.py --base`, `PAPERFLOW_OPAC_BASE`, or `institution.local.md`):
+  paper copies, call numbers, theses. It does not index journal articles, and it
+  has no fallback institution — with nothing configured it prints the setup
+  steps and exits 2.
+- **Full text** requires the user's own institutional login (VPN / WebVPN /
+  aTrust / EZproxy — see `library-access.md`). The flow supplies the search terms
+  and reads back exported files; it never authenticates, never bypasses a captcha
+  or paywall, and never bulk-downloads. Vendors answer 418/420/429 to bots,
+  Chinese databases need 统一身份认证, and systematic downloading can get the
+  whole campus IP blocked.
 - An exported reference is metadata, not proof: `import_refs.py` writes rows with
   `verified_by` empty on purpose, and rule 20 still applies before any of them
   reaches the body.
@@ -536,9 +553,10 @@ Before final submission:
 - `references/execution-protocol.md`: modes, approval gate, step loop, reporting format, decision-point format, file safety, and failure handling.
 - `references/routing-checklist.md`: the three probes, the misjudgment table, and the correction protocol for a wrong scenario diagnosis.
 - `references/citation-contract.md`: the `citations.csv` schema, the four hard citation rules, how to verify a DOI or URL, and the GB/T 7714 field mapping.
-- `references/library-access.md`: SEU library entry points (aTrust off campus, campus IP on campus), the opac endpoint, database export formats, compliance red lines, and the failure table.
+- `references/institution-setup.md`: the one-time profile (school, department, discipline, OPAC base, remote-access mode, databases) written to the untracked `institution.local.md`; nothing about a specific school ships with the skill.
+- `references/library-access.md`: the three literature stages, how to recognise an OPAC system, the four kinds of off-campus access, export formats, compliance red lines, and the failure table.
 - `scripts/search_meta.py`: OpenAlex / Crossref metadata search and DOI lookup; prints candidates with DOI, year, venue, citations.
-- `scripts/opac_search.py`: SEU library catalogue search (title / author / keyword / ISBN / call number / publisher), with holdings URLs and SEU thesis records.
+- `scripts/opac_search.py`: library catalogue search (title / author / keyword / ISBN / call number / publisher) against the configured OPAC, with holdings URLs and thesis records.
 - `scripts/import_refs.py`: RIS / BibTeX / CSL-JSON → `citations.csv`, auto-id, DOI and title+year dedupe, GB/T type code, `verified_by` left empty.
 - `scripts/check.py`: deterministic draft checks (citations against the reference list and the `citations.csv` contract, figure references, fences, placeholders, banned phrases, sections, length).
 - `scripts/verify_refs.py`: networked authenticity check for `citations.csv` (DOI resolution, field comparison, exit 1 on mismatch or unreachable).

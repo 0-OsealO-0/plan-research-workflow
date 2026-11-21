@@ -90,7 +90,7 @@ skills-manager-cli skills deploy plan-research-workflow --agent deepseek_harness
 - Python 3.9+；`export_docx.py` 需要 `python-docx`（缺失时会尝试 DSH 自带运行时，也可 `pip install python-docx`）。
 - `search_meta.py` / `verify_refs.py` / `opac_search.py` 需要网络。
 - **它不自己写论文**：写作、润色、评审、绘图交给被编排的其他 skill（`paper-writer`、`paper-polish`、`anti-defensive-writing`、`lieflat-less-ai-tone`、`grilling`、`academic-paper-reviewer`、`figure-designer`、`matplotlib` 等）。没装的那些，`preflight.py` 会报出来，而不是假装跑过。
-- `references/library-access.md` 用的是东南大学图书馆的接口（aTrust / 汇文 OPAC / 知网代理）。换学校要换端点，其余流程不变。
+- 不内置任何学校的端点：首次使用按 `references/institution-setup.md` 填一次机构档案（学校、院系、OPAC 地址、校外访问方式、常用数据库），写进不提交的 `institution.local.md`；没配时馆藏检查降级为人工，元数据检索不受影响。
 - 中文优先，GB/T 7714-2015 是默认参考文献格式。
 
 ## 目录
