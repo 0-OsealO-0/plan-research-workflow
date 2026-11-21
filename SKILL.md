@@ -1,6 +1,19 @@
 ---
 name: plan-research-workflow
-description: Turn a paper, thesis, course project, research question, proposal, experiment, literature review, writing task, revision, review, submission, or final AI-tone cleanup request into a concrete workflow using the research skills installed on this machine. Use when the user asks how to approach a paper or research task, which skill to use, what to provide at each stage, in what order to work, or asks for exact prompts and an example workflow. Diagnose the current stage, select the minimum useful skill chain, specify required resources and decisions, then run the chain one approved step at a time, and add quality gates without inventing unavailable tools. Supports a plan-only mode that writes nothing.
+description: >-
+  Turn a paper, thesis, course project, research question, proposal,
+  experiment, literature review, writing task, revision, review, submission, or
+  final AI-tone cleanup request into a concrete workflow using the research
+  skills installed on this machine. Use when the user asks how to approach a
+  paper or research task, which skill to use, what to provide at each stage, in
+  what order to work, or asks for exact prompts and an example workflow.
+  Diagnose the current stage, select the minimum useful skill chain, specify
+  required resources and decisions, then run the chain one approved step at a
+  time, and add quality gates without inventing unavailable tools. Supports a
+  plan-only mode that writes nothing.
+  中文说法同样可以触发：这个作业怎么写、论文从哪开始、帮我把这篇论文走完、帮我
+  规划一下、文献从哪找、参考文献怎么引、格式怎么改、还要准备什么、我下一步该干
+  什么、审稿意见怎么回、投稿前该检查什么、帮我看看流程对不对、只给计划先别动文件。
 ---
 
 # Plan Research Workflow
