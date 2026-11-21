@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.bak
+*.bak-*
+*.docx
+*.zip
+paperflow/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

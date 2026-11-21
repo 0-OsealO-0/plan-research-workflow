@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Workflow Planner"
+  short_description: "Plan research workflows with final AI-tone cleanup"
+  default_prompt: "Use $plan-research-workflow to turn my paper or research question into a step-by-step workflow with resources, skills, AI-tone cleanup, exact prompts, and a concrete example."
