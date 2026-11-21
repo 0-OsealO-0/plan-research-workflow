@@ -36,7 +36,9 @@ NUMERALS = {"三": 3, "四": 4, "五": 5, "六": 6}
 
 
 def md_files() -> list[Path]:
-    files = [SKILL] + sorted(REFS.glob("*.md"))
+    """SKILL.md, every references/*.md, and the top-level docs (README, QUICKSTART)."""
+    top = [f for f in sorted(BASE.glob("*.md")) if f != SKILL]
+    files = [SKILL] + sorted(REFS.glob("*.md")) + top
     return [f for f in files if f.is_file()]
 
 

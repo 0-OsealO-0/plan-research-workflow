@@ -58,6 +58,8 @@ produce, and which machine check gates it.
 
 ## 快速开始
 
+第一次用，先看 [QUICKSTART.md](QUICKSTART.md)：三段可直接复制的输入模板（课程论文 / 实验报告 / 开题申报书），每段写清「必须给我的三样东西」。
+
 ```text
 # 1) 让 skill 出计划（execute 模式，会先要一次批准）
 用 plan-research-workflow 帮我做「低空经济 eVTOL 创新设计」的通选课期末报告，
