@@ -224,8 +224,9 @@ def norm_doi(value: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(description="Import RIS/BibTeX/CSL-JSON into citations.csv")
     p.add_argument("files", nargs="+")
     p.add_argument("--csv", default="citations.csv")

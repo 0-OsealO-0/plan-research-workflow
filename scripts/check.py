@@ -473,10 +473,15 @@ def check(path, ftype, min_words, max_words, citations_csv):
 
 
 def main():
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
 
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="Structural self-check for a Markdown or .docx draft.",
+        epilog="退出码：0 无 CRITICAL（可能仍有 WARN）；1 有 CRITICAL；"
+               "2 用法或文件读取错误（含 .docx 无法解析）。"
+               "WARN 不改变退出码，需自行判断。")
     ap.add_argument("file")
     ap.add_argument("--type", default="course", choices=sorted(SECTIONS))
     ap.add_argument("--min-words", type=int, default=0)

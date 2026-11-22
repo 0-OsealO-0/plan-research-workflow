@@ -199,8 +199,9 @@ def render(rows: list[dict], total: int, field: str, text: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(description="Search library holdings (opac).")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--title")

@@ -142,8 +142,9 @@ def check_hard_rule_headings() -> list[str]:
 
 
 def main() -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     files = md_files()
     if not files:
         print("no markdown files found next to scripts/", file=sys.stderr)

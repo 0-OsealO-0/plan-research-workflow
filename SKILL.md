@@ -367,11 +367,17 @@ sentence, and code fences.
 Reference existence is a separate, networked check:
 
 ```text
-python <skill>/scripts/verify_refs.py --csv citations.csv [--only 3,5] [--strict] [--offline]
+python <skill>/scripts/verify_refs.py --csv citations.csv [--only 3,5] [--strict] [--offline] [--assign-ids] [--allow-unchecked]
 ```
 
 It resolves every DOI through doi.org and compares title, year, first author,
 venue, and page. Exit 1 (`MISMATCH`, `UNREACHABLE`, `NO_ID`) blocks submission.
+Exit 2 means the input could not be checked at all — missing `id` column, a CSV
+with only a header, or `--only` matching nothing. That is a failure, not a pass:
+a report with zero verified rows never counts as verification. Exit 3 means
+`--offline` left rows `UNCHECKED`; pass `--allow-unchecked` only when you accept
+that nothing was actually checked. ISBN-only rows are reported `MANUAL` (no
+doi.org record exists) and do not fail the run.
 Never write `verified_by` without having seen the resolved record; `--offline`
 output may not be reported as verification.
 
@@ -572,7 +578,7 @@ Before final submission:
 - `scripts/opac_search.py`: library catalogue search (title / author / keyword / ISBN / call number / publisher) against the configured OPAC, with holdings URLs and thesis records.
 - `scripts/import_refs.py`: RIS / BibTeX / CSL-JSON → `citations.csv`, auto-id, DOI and title+year dedupe, GB/T type code, `verified_by` left empty.
 - `scripts/check.py`: deterministic draft checks (citations against the reference list and the `citations.csv` contract, figure references, fences, placeholders, banned phrases, sections, length).
-- `scripts/verify_refs.py`: networked authenticity check for `citations.csv` (DOI resolution, field comparison, exit 1 on mismatch or unreachable).
+- `scripts/verify_refs.py`: networked authenticity check for `citations.csv` (DOI resolution, field comparison). Exit codes: 0 pass, 1 mismatch/unreachable/no-id, 2 input error or nothing verified, 3 offline `UNCHECKED` without `--allow-unchecked`.
 - `scripts/usage_report.py` — 技能账本：哪些跑了、哪些没跑、各自负责挡住什么；导出前必须展示。
 - `scripts/preflight.py`: checks that every skill in a chain is installed and that the local scripts exist; exit 1 with the missing names.
 - `scripts/status.py`: `paperflow/state.json` (stage, chain, per-step sha256, decisions), append-only `paperflow/runlog.md`, and `paperflow/backups/<name>.<NNN>.bak` versioned backups. `status.py show` tells a resumed session where the job stands. `status.py init` also writes the `术语表.md` template.

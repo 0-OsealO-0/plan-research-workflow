@@ -116,7 +116,28 @@ python scripts/verify_refs.py --csv citations.csv --only 3,5 --delay 1
 - `--only` 只复核指定编号，用于改完几条后增量核验。
 - `--strict` 让 `PARTIAL` 也判失败，用于终稿前的最后一轮。
 - `--offline` 只做格式检查，不联网；离线时不得声称"已核验"。
-- 退出码 1 表示有 `MISMATCH` / `UNREACHABLE` / `NO_ID`，此时禁止交稿。
+- `--assign-ids`：CSV 没有 `id` 列时按行序自动编号（会在 stderr 警告）。手写或从 Word/Excel 导出的表常常没有 `id`。
+- `--allow-unchecked`：确认接受"离线未核验"时才加。
+
+退出码（fail-closed，空结果不算通过）：
+
+| 码 | 含义 | 怎么做 |
+|---|---|---|
+| 0 | 全部条目都有真结论（含 `MANUAL` 人工核对项） | 可以进入下一步 |
+| 1 | 有 `MISMATCH` / `UNREACHABLE` / `NO_ID`（`--strict` 时含 `PARTIAL`） | 改条目或删掉引用，重跑 |
+| 2 | 输入无法核验：缺 `id` 列、只有表头、`--only` 未命中、文件不存在 | 修 CSV 或参数，重跑 |
+| 3 | `--offline` 下有 `UNCHECKED` | 联网重跑；确要放行才加 `--allow-unchecked` |
+
+"0 条被核验"永远不等于"全部通过"：这是本工具最容易误判的地方。
+
+检索到核验的一条龙：
+
+```bash
+python scripts/search_meta.py "low altitude economy cabin" --limit 10 --csv citations.csv
+python scripts/verify_refs.py --csv citations.csv
+```
+
+`search_meta.py --csv` 会自动编号 `id`、`verified_by` 留空，`verify_refs.py` 需要的列都在，不用再手工拼表。
 
 ## 6. 何时停
 

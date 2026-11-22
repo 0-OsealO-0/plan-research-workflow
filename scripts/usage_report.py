@@ -88,8 +88,9 @@ def load_text(root: Path) -> str:
 
 
 def main() -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Report which skills ran on this paper.")
     ap.add_argument("--root", default=".", help="项目根目录（含 paperflow/）")
     ap.add_argument("--required", default="", help="逗号分隔，覆盖默认必需清单")

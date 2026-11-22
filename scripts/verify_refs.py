@@ -122,6 +122,11 @@ def check_row(row, timeout):
     claimed_page = row.get("page", "") or ""
     identifier = (row.get("doi_or_url") or row.get("doi") or row.get("url") or "").strip()
 
+    if identifier.upper().startswith("ISBN") or re.fullmatch(r"[0-9][0-9\-]{8,16}[0-9Xx]", identifier):
+        if (row.get("venue") or "").strip() and (row.get("page") or "").strip():
+            return "MANUAL", ["%s：图书按出版信息与页码人工核对，doi.org 不覆盖" % identifier]
+        return "MANUAL", ["%s：需人工核对作者、出版者与页码" % identifier]
+
     if not identifier:
         if (row.get("venue") or "").strip() and (row.get("page") or "").strip():
             return "MANUAL", ["无 DOI/URL；专著/标准按出版信息与页码人工核对"]
@@ -180,26 +185,48 @@ def check_row(row, timeout):
     return "OK", details or ["题名、年份、作者一致"]
 
 
-def load_rows(path):
+def load_rows(path, assign_ids=False):
     with io.open(path, encoding="utf-8-sig", newline="") as fh:
         reader = csv.DictReader(fh)
         if not reader.fieldnames:
             raise ValueError("CSV 没有表头")
         fields = {name.strip().lower(): name for name in reader.fieldnames}
-        rows = []
+        has_id = "id" in fields
+        if not has_id and not assign_ids:
+            raise ValueError(
+                "CSV 缺少必需的 id 列（用于在报告中定位每条引用）。"
+                "请添加 id 列，或用 --assign-ids 自动编号。")
+        rows, skipped = [], 0
         for raw in reader:
-            row = {key: (raw.get(fields[key], "") or "").strip() for key in fields}
-            if not row.get("id"):
+            rid = (raw.get(fields["id"], "") or "").strip() if has_id else ""
+            if not rid and not has_id:
+                rid = str(len(rows) + 1)
+            if not rid:
+                skipped += 1
                 continue
+            row = {key: (raw.get(fields[key], "") or "").strip() for key in fields}
+            row["id"] = rid
             rows.append(row)
-        return rows
+    if not has_id:
+        sys.stderr.write("警告：CSV 缺少 id 列，已按行序自动编号 1..%d；"
+                         "建议在源表中显式提供 id。\n" % len(rows))
+    if skipped:
+        sys.stderr.write("警告：%d 行因缺少 id 被跳过。\n" % skipped)
+    return rows
 
 
 def main():
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
 
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="Verify that each citation in citations.csv really exists "
+                    "and that its metadata matches the DOI record.",
+        epilog="退出码：0 全部通过；1 有核验失败（MISMATCH/UNREACHABLE/NO_ID，"
+               "--strict 时含 PARTIAL）；2 输入错误或没有任何行被核验；"
+               "3 --offline 下存在未联网核验的条目（需 --allow-unchecked 才放行）。",
+    )
     ap.add_argument("--csv", default="citations.csv")
     ap.add_argument("--timeout", type=float, default=20.0)
     ap.add_argument("--delay", type=float, default=1.0)
@@ -208,10 +235,14 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--offline", action="store_true")
+    ap.add_argument("--assign-ids", action="store_true",
+                    help="CSV 没有 id 列时按行序自动编号（会向 stderr 打印警告）")
+    ap.add_argument("--allow-unchecked", action="store_true",
+                    help="--offline 下允许把 UNCHECKED 当通过（默认 exit 3）")
     args = ap.parse_args()
 
     try:
-        rows = load_rows(args.csv)
+        rows = load_rows(args.csv, args.assign_ids)
     except (OSError, ValueError) as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
         return 2
@@ -241,6 +272,15 @@ def main():
                 writer.writerow([entry["id"], entry["status"], " | ".join(entry["details"]),
                                  entry["title"], entry["doi_or_url"]])
 
+    if not results:
+        msg = "没有任何行被核验"
+        if only:
+            msg += "（--only %s 未命中任何 id）" % args.only
+        else:
+            msg += "（CSV 里没有可用行）"
+        print("ERROR: " + msg, file=sys.stderr)
+        return 2
+
     order = {"MISMATCH": 0, "UNREACHABLE": 1, "NO_ID": 2, "PARTIAL": 3, "MANUAL": 4, "OK": 5, "UNCHECKED": 6}
     results.sort(key=lambda entry: (order.get(entry["status"], 9), entry["id"]))
 
@@ -262,6 +302,11 @@ def main():
         failing.add("PARTIAL")
     if any(entry["status"] in failing for entry in results):
         return 1
+    unchecked = [e for e in results if e["status"] == "UNCHECKED"]
+    if unchecked and not args.allow_unchecked:
+        print("ERROR: %d 条未联网核验（--offline）。确认接受后再加 --allow-unchecked。"
+              % len(unchecked), file=sys.stderr)
+        return 3
     return 0
 
 

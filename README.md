@@ -91,6 +91,15 @@ skills-manager-cli skills deploy plan-research-workflow --agent deepseek_harness
 
 - Python 3.9+；`export_docx.py` 需要 `python-docx`（缺失时会尝试 DSH 自带运行时，也可 `pip install python-docx`）。
 - `search_meta.py` / `verify_refs.py` / `opac_search.py` 需要网络。
+- 退出码约定：`0` 通过 / `1` 有问题 / `2` 输入错误或什么都没检查 / `3` 离线未核验（`verify_refs.py`）。空的输入不算通过——`verify_refs.py` 在 0 条被核验时返回 2，不是 0。
+
+## 测试
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+覆盖 `verify_refs.py` 的 fail-closed 行为：缺 `id` 列、只有表头、`--only` 未命中、`--offline` 未核验、ISBN 行走 `MANUAL`。不需要网络。
 - **它不自己写论文**：写作、润色、评审、绘图交给被编排的其他 skill（`paper-writer`、`paper-polish`、`anti-defensive-writing`、`lieflat-less-ai-tone`、`grilling`、`academic-paper-reviewer`、`figure-designer`、`matplotlib` 等）。没装的那些，`preflight.py` 会报出来，而不是假装跑过。
 - 不内置任何学校的端点：首次使用按 `references/institution-setup.md` 填一次机构档案（学校、院系、OPAC 地址、校外访问方式、常用数据库），写进不提交的 `institution.local.md`；没配时馆藏检查降级为人工，元数据检索不受影响。
 - 中文优先，GB/T 7714-2015 是默认参考文献格式。

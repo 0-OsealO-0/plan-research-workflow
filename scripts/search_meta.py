@@ -16,6 +16,7 @@ Exit codes: 0 ok, 2 network/usage error.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 import urllib.error
@@ -163,8 +164,9 @@ def render(rows: list[dict]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(description="Search OpenAlex / Crossref for paper metadata.")
     p.add_argument("query", nargs="?", help="search terms")
     p.add_argument("--limit", type=int, default=10, help="results (default 10, max 50)")
@@ -174,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--doi", help="look up one DOI instead of searching")
     p.add_argument("--mailto", help="your email for the polite API pool")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--csv", dest="csv_out", help="把候选写成 citations.csv（自动编号 id，verified 留空）")
     args = p.parse_args(argv)
 
     try:
@@ -200,6 +203,31 @@ def main(argv: list[str] | None = None) -> int:
         print(f"检索失败（网络）：{exc}", file=sys.stderr)
         return 2
 
+    if args.csv_out:
+        import csv as _csv
+        cols = ["id", "authors", "year", "title", "venue", "doi_or_url",
+                "page", "verified_by", "verified_on", "supports", "type"]
+        type_map = {"journal-article": "J", "proceedings-article": "C",
+                    "book-chapter": "C", "book": "M", "dissertation": "D",
+                    "posted-content": "EB-OL", "report": "R", "standard": "S"}
+        with io.open(args.csv_out, "w", encoding="utf-8-sig", newline="") as fh:
+            writer = _csv.DictWriter(fh, fieldnames=cols)
+            writer.writeheader()
+            for i, r in enumerate(rows, 1):
+                writer.writerow({
+                    "id": str(i),
+                    "authors": r.get("authors") or "",
+                    "year": r.get("year") or "",
+                    "title": r.get("title") or "",
+                    "venue": r.get("venue") or "",
+                    "doi_or_url": r.get("doi") or "",
+                    "page": "", "verified_by": "", "verified_on": "",
+                    "supports": "",
+                    "type": type_map.get(str(r.get("type") or ""), ""),
+                })
+        print("已写 %s（%d 行，id 自动编号，verified 为空；下一步跑 "
+              "verify_refs.py --csv %s）" % (args.csv_out, len(rows), args.csv_out))
+        return 0
     if args.json:
         print(json.dumps(rows, ensure_ascii=False, indent=2))
     else:

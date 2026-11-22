@@ -332,8 +332,9 @@ def cmd_backup(args):
 
 
 def main():
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
 
     ap = argparse.ArgumentParser()
     common = argparse.ArgumentParser(add_help=False)
