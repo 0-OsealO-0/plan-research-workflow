@@ -1,0 +1,138 @@
+{
+  "_comment": "Machine-readable dependency manifest for plan-research-workflow. preflight.py --explain reads this file. install: a runnable skills-manager command or URL when one exists; empty string means the skill is not published and must come from the same source the host obtained this skill from.",
+  "paper-writer": {
+    "role": "把材料写成可投稿正文：第 4 步真正产字的那一环",
+    "install": "",
+    "fallback": "agent 自己写初稿：能出字，但结构、引用纪律与“不许编”的约束都退化"
+  },
+  "paper-polish": {
+    "role": "语言层润色：语法、语气强度、中译英；不改主张",
+    "install": "",
+    "fallback": "只做 check.py 能机器判的部分，语气与翻译腔靠人读"
+  },
+  "anti-defensive-writing": {
+    "role": "叙事层：删自我削弱、定主线与比较范围（中英各一版）",
+    "install": "skills-manager-cli skills install https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill/tree/main/skills/anti-defensive-writing",
+    "fallback": "无等价替代：只能人工按 main-line.md 的主张边界逐句自查"
+  },
+  "anti-defensive-writing-en": {
+    "role": "anti-defensive-writing 的英文版（英文稿用）",
+    "install": "skills-manager-cli skills install https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill/tree/main/skills/anti-defensive-writing-en",
+    "fallback": "同 anti-defensive-writing：无等价替代"
+  },
+  "lieflat-less-ai-tone": {
+    "role": "去 AI 味：白名单式改写，只动命中的句子",
+    "install": "",
+    "fallback": "check.py 的禁用措辞检查 + 人工读"
+  },
+  "grilling": {
+    "role": "红队：攻击提纲与主张，找未排除的替代方案、无出处参数、不可证伪命题",
+    "install": "",
+    "fallback": "无替代：跳过红队等于放弃对抗性审查（playbook 里明令不可省）"
+  },
+  "pre-submission-reviewer": {
+    "role": "交稿体检：宏观逻辑、写作细节、格式、图表，出 CRITICAL/MAJOR/MINOR 报告",
+    "install": "",
+    "fallback": "check.py 只能查结构性问题，评审意见需人写"
+  },
+  "academic-paper-reviewer": {
+    "role": "模拟同行评审（多角色评审团），用于投前压力测试",
+    "install": "",
+    "fallback": "用 pre-submission-reviewer 的单人视角代替，视角更窄"
+  },
+  "academic-paper": {
+    "role": "12-agent 全流程与格式转换（APA/Chicago/MLA/IEEE/Vancouver）",
+    "install": "",
+    "fallback": "paper-writer + 手工排版；convert 与 citation-check 能力丢失"
+  },
+  "academic-pipeline": {
+    "role": "端到端编排（research→write→review→revise→finalize）",
+    "install": "",
+    "fallback": "按 workflow-playbooks.md 的 playbook 8 手工串；阶段门要自己盯"
+  },
+  "deep-research": {
+    "role": "13-agent 深度检索与文献综述",
+    "install": "",
+    "fallback": "search_meta.py + 手工筛选；综述覆盖度与交叉验证变弱"
+  },
+  "research-paper-writing": {
+    "role": "ML/CV/NLP 论文的章节结构与审稿人视角改法",
+    "install": "",
+    "fallback": "按 playbook 的结构清单人工改"
+  },
+  "tech-paper-template": {
+    "role": "技术论文的逻辑骨架（背景—局限—思路—挑战—贡献）",
+    "install": "",
+    "fallback": "照 main-line.md 手工搭骨架"
+  },
+  "benchmark-paper-template": {
+    "role": "benchmark/评测论文的五柱结构",
+    "install": "",
+    "fallback": "按 playbook 2 的清单人工搭"
+  },
+  "intro-drafter": {
+    "role": "六段式 Introduction 起草",
+    "install": "",
+    "fallback": "paper-writer 直接写，容易写成流水账"
+  },
+  "idea-evaluator": {
+    "role": "选题评估（五个维度 + 致命缺陷审计）",
+    "install": "",
+    "fallback": "红队式自问：这个 idea 的高/快/强/省/广分别是什么"
+  },
+  "rebuttal-guidance": {
+    "role": "审稿意见的回复策略（不是代写全文）",
+    "install": "",
+    "fallback": "逐条列意见 + 自己定策略"
+  },
+  "sr-screener": {
+    "role": "系统综述的纳排筛选（双盲 + 仲裁 + PRISMA 计数）",
+    "install": "",
+    "fallback": "Excel 手工筛；PRISMA 数字要自己数"
+  },
+  "figure-designer": {
+    "role": "核心三图的设计范式与图表审计",
+    "install": "",
+    "fallback": "matplotlib/scientific-visualization 直接画，设计判断靠自己"
+  },
+  "drawio-reconstruction": {
+    "role": "把参考图重建成可编辑 drawio（架构图/流程图）",
+    "install": "",
+    "fallback": "手画或放弃可编辑性"
+  },
+  "matplotlib": {
+    "role": "出版级绘图：字号、色盲安全、导出元数据",
+    "install": "",
+    "fallback": "手写 matplotlib，容易做出 3pt 字和图注错位"
+  },
+  "scientific-visualization": {
+    "role": "期刊图规范、配色审查、image_metadata 校验",
+    "install": "skills-manager-cli skills install https://github.com/K-Dense-AI/scientific-agent-skills/tree/main/skills/scientific-visualization",
+    "fallback": "matplotlib 基础规范 + 人工看最终尺寸"
+  },
+  "statistical-analysis": {
+    "role": "统计检验选择、假设检查、效应量、APA 报告",
+    "install": "",
+    "fallback": "自选检验，容易在样本量与假设上出错"
+  },
+  "exploratory-data-analysis": {
+    "role": "数据画像、缺失/泄漏审计、异常值敏感性",
+    "install": "",
+    "fallback": "pandas 手工 describe()，泄漏与缺失容易被忽略"
+  },
+  "uncertainty-and-units": {
+    "role": "量纲检查、不确定度传播、有效数字",
+    "install": "",
+    "fallback": "手工换算，单位与有效数字错误无法自动发现"
+  },
+  "sympy": {
+    "role": "符号推导与 LaTeX 公式生成",
+    "install": "",
+    "fallback": "手推；公式转 LaTeX 靠抄"
+  },
+  "vibe-research-workflow": {
+    "role": "AI 辅助科研的工作方式指导（工具选型与分工）",
+    "install": "",
+    "fallback": "按本 skill 的 execute 模式自己做分工"
+  }
+}

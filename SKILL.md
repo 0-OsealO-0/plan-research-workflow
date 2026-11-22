@@ -85,11 +85,14 @@ up an existing user file before overwriting it, and never delete anything.
 5. Read `references/prompt-library.md` for the handoff fields of the chosen skill; in `plan` mode these are the prompts to print.
 6. Read `references/example-course-report.md` when the user asks for a concrete example.
 7. Read `references/execution-protocol.md` before running any downstream skill, and decide the mode first: `execute` unless the user asks for thinking only.
-8. Before proposing a step plan, run `scripts/preflight.py --require <the chain's skills>` (rule 22).
+8. Before proposing a step plan, run `scripts/preflight.py --require <the chain's skills>` (rule 22); add `--explain` when anything is missing (rule 32).
 9. On the first use on a machine, or whenever literature access is needed and `institution.local.md` is
    missing, run the one-time profile in `references/institution-setup.md` (school, department, discipline,
    OPAC base, remote access, databases). Store it in the untracked `institution.local.md` and never assume
    a school. Ask at most the three questions it lists, once.
+10. If preflight reports missing skills, run `scripts/preflight.py --explain` and
+    put the list to the user before doing anything else: each missing skill's role,
+    its install source (when one exists), and what degrades without it (rule 32).
 
 If the user's request is already specific enough, proceed with stated assumptions instead of asking many questions.
 
@@ -567,12 +570,26 @@ Before final submission:
     legitimately inside a cited title, delete that word from the glossary instead of
     editing the citation, and never widen the rule until it flags ordinary prose.
 
+32. **Never install a missing skill without saying so.** This skill does not
+    bundle its partners (`paper-writer`, `grilling`, `paper-polish`,
+    `academic-paper-reviewer`, `figure-designer`, …). When `preflight.py` reports
+    them missing, show the user: which ones, what each is for, where it can be
+    obtained (`references/skill-dependencies.json`), and what is lost by
+    substituting. Then ask, once, whether to install them. Installing third-party
+    code is the user's decision and needs the host's security scan
+    (`skill-inspector`) first; after installing, run `preflight.py` again and
+    report the new state. An agent that silently substitutes, or silently
+    installs, has broken the run's audit trail.
+
+
 ## Reference Files
 
 - `references/execution-protocol.md`: modes, approval gate, step loop, reporting format, decision-point format, file safety, and failure handling.
 - `references/routing-checklist.md`: the three probes, the misjudgment table, and the correction protocol for a wrong scenario diagnosis.
 - `references/citation-contract.md`: the `citations.csv` schema, the four hard citation rules, how to verify a DOI or URL, and the GB/T 7714 field mapping.
 - `references/institution-setup.md`: the one-time profile (school, department, discipline, OPAC base, remote-access mode, databases) written to the untracked `institution.local.md`; nothing about a specific school ships with the skill.
+- `references/skill-dependencies.md`: why the partner skills are not bundled, the three kinds of source, and the install-then-recheck order (`skill-inspector` first).
+- `references/skill-dependencies.json`: the machine-readable manifest `preflight.py --explain` reads (role, install source, cost of doing without).
 - `references/library-access.md`: the three literature stages, how to recognise an OPAC system, the four kinds of off-campus access, export formats, compliance red lines, and the failure table.
 - `scripts/search_meta.py`: OpenAlex / Crossref metadata search and DOI lookup; prints candidates with DOI, year, venue, citations.
 - `scripts/opac_search.py`: library catalogue search (title / author / keyword / ISBN / call number / publisher) against the configured OPAC, with holdings URLs and thesis records.

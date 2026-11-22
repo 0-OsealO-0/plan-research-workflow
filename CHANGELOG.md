@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.4 — 缺技能要说、要问、才装
+
+用户提出的问题：搭档技能不在仓库里，安装时会不会告知、会不会在知情情况下帮装？此前的答案是「都不会」：
+`skills install` 只拷文件，第一次 `preflight.py` 才列 `[missing]`，而那是给 agent 看的，用户可能只看到「已完成」。
+
+- **新增** `references/skill-dependencies.json`：27 个搭档技能的作用、安装来源（有公开地址的才写）、缺失时的代价；`install` 为空 = 没有公开地址，不许 agent 猜 URL 去装。
+- **新增** `references/skill-dependencies.md`：为什么依赖不打包、三类来源（公开仓库 / 本机库 / 作者提供）、正确的安装顺序、降级原则。
+- **新增** `preflight.py --explain`：逐个缺失技能打印「作用 / 安装 / 缺失时」，并写明「先让用户确认，再 skill-inspector 扫描，然后 install + deploy」；JSON 输出的 `missing_skills` 也带上这三项。
+- **新增** SKILL.md 规则 32 + First Actions 第 10 条：缺技能必须先列清单问用户，不许静默替代、不许静默安装；装完重跑 preflight 并报告新状态。
+- **文档**：README、QUICKSTART 补「第一次跑会先问你」段落。
+- **测试**：`tests/test_preflight_explain.py`（5 例：explain 三要素、同意规则、默认提示、manifest 覆盖全部默认技能、JSON 字段）。
+
 ## v1.1.3 — verify_refs 不再 fail-open（外部反馈修复）
 
 来自一份第三方实测反馈（Windows + Python 3.14 + DSH 2.2）：`verify_refs.py` 在"一条都没核验"时返回退出码 0。

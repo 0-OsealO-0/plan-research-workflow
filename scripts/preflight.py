@@ -6,7 +6,11 @@ the expensive steps have already run. Run this before approving a step plan.
 
 Usage:
     python preflight.py [--require a,b,c] [--all] [--json] [--check-network]
-                        [--timeout 8]
+                        [--timeout 8] [--explain]
+
+--explain prints, for every missing skill: what it does, how to install it when
+a source exists, and what degrades without it. It never installs anything: a
+missing skill is the user's decision, not the agent's.
 
 Exit codes:
     0  every required skill is installed and the local scripts are present
@@ -22,6 +26,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_ROOT = os.path.dirname(HERE)
+DEPS_FILE = os.path.join(SKILL_ROOT, "references", "skill-dependencies.json")
 
 HOME = os.path.expanduser("~")
 
@@ -99,6 +104,34 @@ def check_network(timeout):
         return False, "%s: %s" % (type(exc).__name__, exc)
 
 
+def load_deps():
+    try:
+        with open(DEPS_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in data.items() if isinstance(v, dict)}
+
+
+def explain_missing(missing, deps):
+    print("")
+    print("缺 %d 个搭档技能。下面是每个的作用、安装方式，以及缺失时的代价：" % len(missing))
+    for name in missing:
+        info = deps.get(name) or {}
+        print("")
+        print("[missing] %s" % name)
+        print("    作用：%s" % (info.get("role") or "（未登记作用，见 references/skill-dependencies.json）"))
+        install = (info.get("install") or "").strip()
+        if install:
+            print("    安装：%s" % install)
+        else:
+            print("    安装：本仓库不含此技能，需向提供本 skill 的来源索取（无公开地址）")
+        print("    缺失时：%s" % (info.get("fallback") or "按 references/skill-catalog.md 的降级顺序换替代技能并说明损失"))
+    print("")
+    print("安装第三方 skill 属于引入外部代码：先让用户确认，再跑 skill-inspector 扫描，"
+          "然后用 skills-manager-cli skills install 安装并 deploy。")
+
+
 def main():
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
@@ -110,6 +143,8 @@ def main():
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--check-network", action="store_true")
     ap.add_argument("--timeout", type=float, default=8.0)
+    ap.add_argument("--explain", action="store_true",
+                    help="列出缺失技能的作用、安装方式与缺失代价（不安装任何东西）")
     args = ap.parse_args()
 
     if args.require.strip():
@@ -135,10 +170,17 @@ def main():
         network is not None and not network["ok"]
     )
 
+    deps = load_deps()
     if args.json:
         print(json.dumps({
             "skills": rows,
-            "missing_skills": missing,
+            "missing_skills": [
+                {"skill": name,
+                 "role": (deps.get(name) or {}).get("role") or "",
+                 "install": (deps.get(name) or {}).get("install") or "",
+                 "fallback": (deps.get(name) or {}).get("fallback") or ""}
+                for name in missing
+            ],
             "missing_scripts": missing_scripts,
             "network": network,
             "ok": not failed,
@@ -162,6 +204,10 @@ def main():
         if missing:
             print("MISSING: %d skill(s). Choose a substitute from the degradation order in" % len(missing))
             print("references/skill-catalog.md and state what is lost; do not skip silently.")
+            print("Run this with --explain for each one's role, install source and cost;")
+            print("tell the user before installing anything (never install silently).")
+            if args.explain:
+                explain_missing(missing, deps)
         else:
             print("ALL REQUIRED SKILLS PRESENT")
 
