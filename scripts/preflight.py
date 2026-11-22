@@ -37,6 +37,14 @@ ROOTS = [
     ("codex", os.path.join(HOME, ".codex", "skills")),
     ("dsh", os.path.join(HOME, ".dsh", "skills")),
     ("agents", os.path.join(HOME, ".agents", "skills")),
+    # other agent runtimes: same Agent Skills layout, different directory
+    ("claude", os.path.join(HOME, ".claude", "skills")),
+    ("cursor", os.path.join(HOME, ".cursor", "skills")),
+    ("opencode", os.path.join(HOME, ".config", "opencode", "skill")),
+    ("opencode-plural", os.path.join(HOME, ".config", "opencode", "skills")),
+    # project-local skills, resolved from the directory preflight runs in
+    ("project-claude", os.path.join(os.getcwd(), ".claude", "skills")),
+    ("project-cursor", os.path.join(os.getcwd(), ".cursor", "skills")),
 ]
 for _extra in filter(None, os.environ.get("PAPERFLOW_SKILL_ROOTS", "").split(os.pathsep)):
     ROOTS.append(("env", _extra))

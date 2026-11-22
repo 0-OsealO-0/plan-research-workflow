@@ -81,8 +81,13 @@ python <skill>/scripts/usage_report.py --root .
 DeepSeek Harness（skills-manager）：
 
 ```text
+# 用 skills-manager（本机自动化工具）
 skills-manager-cli skills install https://github.com/0-OsealO-0/plan-research-workflow
 skills-manager-cli skills deploy plan-research-workflow --agent deepseek_harness
+
+# 或者只有 git：克隆后把整个目录放进对应 agent 的技能目录
+git clone https://github.com/0-OsealO-0/plan-research-workflow /tmp/prw
+cp -r /tmp/prw ~/.claude/skills/plan-research-workflow   # DSH: ~/.dsh/skills，Codex: ~/.codex/skills
 ```
 
 其他 agent：把整个目录放进它的 skills 目录即可（`SKILL.md` + `references/` + `scripts/`）。

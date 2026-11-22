@@ -16,9 +16,20 @@ python scripts/preflight.py --explain  # 看每个缺失项：作用 / 安装方
 然后把 `--explain` 的清单原样交给用户，问一句「要装吗」，用户同意后才：
 
 1. `skill-inspector` 扫描来源（引入第三方代码属于供应链决定，先看它要什么权限）；
-2. `skills-manager-cli skills install <source>` 安装；
-3. `skills-manager-cli skills deploy <name> --agent <agent>` 部署；
-4. 重跑 `preflight.py`，把新状态报给用户。
+2. 安装到用户所用 agent 的技能目录（见下）；
+3. 重跑 `preflight.py`，把新状态报给用户。
+
+安装没有唯一正确的命令，取决于机器上有什么：
+
+| 环境 | 安装方式 |
+|---|---|
+| 有 `skills-manager-cli`（本机自动化工具） | `skills-manager-cli skills install <source>` + `skills deploy <name> --agent <agent>` |
+| 只有 git | `git clone <repo> <tmp>` 后把 `skills/<name>/` 整个目录复制到该 agent 的技能目录 |
+| 对方直接给了 zip/文件夹 | 解压或复制到技能目录，确认里面有 `SKILL.md` |
+
+技能目录按 agent 分：DSH `~/.dsh/skills`、Codex `~/.codex/skills`、Claude Code `~/.claude/skills`、
+Cursor `~/.cursor/skills`、OpenCode `~/.config/opencode/skill`，项目级则在 `<项目>/.claude/skills`
+或 `<项目>/.cursor/skills`。`preflight.py` 会把这几个目录都查一遍。
 
 不允许静默替代，也不允许静默安装：两者都会让这次运行的审计链条断掉。
 

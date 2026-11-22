@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.1.5 — 换个 agent 也能用
+
+别人问「这个 skill 在别的 agent 上能跑吗」。结构上能：`SKILL.md` 是标准 Agent Skills 格式，
+脚本除 Word 导出外只用标准库；但实际上有四处会绊住人，这一版堵掉三处，第四处写进说明。
+
+- **`preflight.py` 的根目录扩到别的 agent**：新增 `~/.claude/skills`、`~/.cursor/skills`、
+  `~/.config/opencode/skill`（单数）与 `skills`（复数）、以及项目级 `<project>/.claude/skills`、
+  `<project>/.cursor/skills`。此前只认 library/codex/dsh/agents，Cursor 用户会把装好的技能看成「全缺」。
+- **安装不再绑死本机工具**：`references/skill-dependencies.md` 与 `README.md` 补了「只有 git / 只有文件夹」
+  两条等价路径（`git clone` 后复制到对应 agent 目录），`skills-manager-cli` 降为其中一种便利方式。
+- **没有 skill 工具的宿主**：执行循环第 4 步写明「直接读该技能的 SKILL.md 并照做，流程相同，只是加载机制不同」。
+- **`python-docx` 前置依赖写进 SKILL.md**：`export_docx.py` 会在 `PAPERFLOW_PYTHON` / DSH 自带解释器下重执行，
+  都没有时需要 `pip install python-docx`。
+- **测试**：`tests/test_preflight_roots.py`（3 例：跨 agent 目录能被识别、默认根目录清单完整、
+  `PAPERFLOW_SKILL_ROOTS` 可追加）。
+
+仍未验证的是「在 Claude Code / Cursor 里真的跑通一遍」——本机只有 DSH 和 Codex 两条真实路径。
+
 ## v1.1.4 — 缺技能要说、要问、才装
 
 用户提出的问题：搭档技能不在仓库里，安装时会不会告知、会不会在知情情况下帮装？此前的答案是「都不会」：

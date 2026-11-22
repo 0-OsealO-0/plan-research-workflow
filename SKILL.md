@@ -52,7 +52,10 @@ Execution loop:
 3. Ask for approval once.
 4. After approval, run one step per message: load the skill, follow it with the
    step's parameters, then report. Once approved, every reply runs the next step
-   automatically; do not ask "shall I continue" between steps.
+   automatically; do not ask "shall I continue" between steps. If the host has no
+   skill-loading tool (some editors only read Markdown), read that skill's
+   `SKILL.md` from disk and follow it directly — the procedure is the same, only
+   the loading mechanism differs.
 5. Report: skill, artifact path, what changed with line ranges, the verification
    you ran, gate status, next step.
 6. Stop at a decision point, a missing input, or a failed gate; never pass a
@@ -244,6 +247,11 @@ skill is present, or the substitute and what it costs.
 Rules:
 
 - One primary skill per step.
+- `preflight.py` looks in the library and in the per-agent skill directories
+  (`~/.codex/skills`, `~/.dsh/skills`, `~/.claude/skills`, `~/.cursor/skills`,
+  `~/.config/opencode/skill`, plus `<project>/.claude/skills` and
+  `<project>/.cursor/skills`). A skill present in any of them counts as installed;
+  if the layout is unusual, extend the search with `PAPERFLOW_SKILL_ROOTS`.
 - Mark optional steps.
 - Avoid overlapping skills in the same step.
 - Keep the shortest chain that can solve the task.
@@ -599,7 +607,7 @@ Before final submission:
 - `scripts/usage_report.py` — 技能账本：哪些跑了、哪些没跑、各自负责挡住什么；导出前必须展示。
 - `scripts/preflight.py`: checks that every skill in a chain is installed and that the local scripts exist; exit 1 with the missing names.
 - `scripts/status.py`: `paperflow/state.json` (stage, chain, per-step sha256, decisions), append-only `paperflow/runlog.md`, and `paperflow/backups/<name>.<NNN>.bak` versioned backups. `status.py show` tells a resumed session where the job stands. `status.py init` also writes the `术语表.md` template.
-- `scripts/export_docx.py`: Markdown → `.docx` with a school template (margins, header, styles kept), GB/T 7714 参考文献 from `citations.csv`, and `_runtime.py` for the python-docx fallback.
+- `scripts/export_docx.py`: Markdown → `.docx` with a school template (margins, header, styles kept), GB/T 7714 参考文献 from `citations.csv`, and `_runtime.py` for the python-docx fallback. Needs `python-docx`: it re-executes under `PAPERFLOW_PYTHON` or the DSH bundled interpreter when the current one lacks it; otherwise install with `pip install python-docx`.
 - `scripts/lint_docs.py`: consistency lint for this skill's own documentation (fences, rule numbering, per-playbook `Minimal:` lines, the verbatim correction sentence, referenced paths); run it after editing the skill.
 - `references/skill-catalog.md`: local skills, functions, inputs, outputs, and selection conditions.
 - `references/workflow-playbooks.md`: complete chains for common paper and research scenarios.
