@@ -104,7 +104,10 @@ cp -r /tmp/prw ~/.claude/skills/plan-research-workflow   # DSH: ~/.dsh/skills，
 python -m unittest discover -s tests -v
 ```
 
-覆盖 `verify_refs.py` 的 fail-closed 行为：缺 `id` 列、只有表头、`--only` 未命中、`--offline` 未核验、ISBN 行走 `MANUAL`。不需要网络。
+覆盖 `verify_refs.py` 的 fail-closed 行为：缺 `id` 列、只有表头、`--only` 未命中、`--offline` 未核验、ISBN 行走 `MANUAL`；`preflight.py` 的跨 agent 目录查找；以及重复 `id` 警告与 `import_refs.py` 的三种空结果（exit 2 / 1 / 1）。全部离线，不需要网络。
+
+测试用 `tempfile`，所以要一个可写的临时目录：在受限沙箱（例如 DSH 的 `workspace-write`）里
+`PermissionError` 会被拒，那不是测试失败，换到沙箱外跑即可。
 - **它不自己写论文**：写作、润色、评审、绘图交给被编排的其他 skill（`paper-writer`、`paper-polish`、`anti-defensive-writing`、`lieflat-less-ai-tone`、`grilling`、`academic-paper-reviewer`、`figure-designer`、`matplotlib` 等）。没装的那些，`preflight.py` 会报出来，而不是假装跑过。
 - **搭档技能不打包**：写作、润色、红队、评审、绘图等 skill 不在本仓库；`preflight.py` 会列出缺哪些，
   `--explain` 给出每个的作用、安装方式与缺失代价，装不装由你决定（安装前会先跑安全扫描）。详见

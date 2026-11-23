@@ -207,6 +207,18 @@ def load_rows(path, assign_ids=False):
             row = {key: (raw.get(fields[key], "") or "").strip() for key in fields}
             row["id"] = rid
             rows.append(row)
+    seen_ids, dup_ids = set(), []
+    for row in rows:
+        if row["id"] in seen_ids:
+            if row["id"] not in dup_ids:
+                dup_ids.append(row["id"])
+        else:
+            seen_ids.add(row["id"])
+    if dup_ids:
+        shown = ", ".join(dup_ids[:6]) + (" 等" if len(dup_ids) > 6 else "")
+        sys.stderr.write(
+            "警告：CSV 中有 %d 个重复的 id（%s），报告里这些条目无法区分；"
+            "建议给每行唯一的 id。\n" % (len(dup_ids), shown))
     if not has_id:
         sys.stderr.write("警告：CSV 缺少 id 列，已按行序自动编号 1..%d；"
                          "建议在源表中显式提供 id。\n" % len(rows))

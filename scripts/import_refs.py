@@ -239,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     seen_titles = {(r.get("title", "").strip().lower(), (r.get("year") or "").strip()) for r in existing}
     next_id = args.start_id or (max((int(r["id"]) for r in existing if r["id"].isdigit()), default=0) + 1)
 
-    imported, skipped = [], []
+    imported, skipped, untitled = [], [], []
     for path in args.files:
         if not os.path.exists(path):
             print(f"文件不存在：{path}", file=sys.stderr)
@@ -247,10 +247,10 @@ def main(argv: list[str] | None = None) -> int:
         for rec in parse_file(path):
             doi = norm_doi(rec.get("doi_or_url", ""))
             key = (rec.get("title", "").strip().lower(), str(rec.get("year", "")).strip())
-            if (doi and doi in seen_dois) or (key in seen_titles):
-                skipped.append(rec)
-                continue
             if not rec.get("title"):
+                untitled.append(rec)
+                continue
+            if (doi and doi in seen_dois) or (key in seen_titles):
                 skipped.append(rec)
                 continue
             row = {
@@ -273,11 +273,20 @@ def main(argv: list[str] | None = None) -> int:
             next_id += 1
 
     if not imported:
-        print(f"没有可导入的新记录（{len(skipped)} 条重复或缺题名）。")
-        return 1 if skipped else 0
+        reasons = []
+        if skipped:
+            reasons.append(f"{len(skipped)} 条与 {args.csv} 中已有记录重复")
+        if untitled:
+            reasons.append(f"{len(untitled)} 条缺题名被跳过")
+        if not reasons:
+            print("没有可导入的记录：输入文件里没有任何条目。", file=sys.stderr)
+            return 2
+        print("没有可导入的新记录（" + "，".join(reasons) + "）。", file=sys.stderr)
+        return 1
 
     if args.dry_run:
-        print(f"[dry-run] 将导入 {len(imported)} 条到 {args.csv}，跳过 {len(skipped)} 条重复：")
+        print(f"[dry-run] 将导入 {len(imported)} 条到 {args.csv}，"
+              f"跳过 {len(skipped)} 条重复、{len(untitled)} 条缺题名：")
     else:
         new_file = not os.path.exists(args.csv)
         with open(args.csv, "a", newline="", encoding="utf-8-sig") as fh:
@@ -285,7 +294,8 @@ def main(argv: list[str] | None = None) -> int:
             if new_file:
                 writer.writeheader()
             writer.writerows(imported)
-        print(f"已导入 {len(imported)} 条到 {args.csv}，跳过 {len(skipped)} 条重复：")
+        print(f"已导入 {len(imported)} 条到 {args.csv}，"
+              f"跳过 {len(skipped)} 条重复、{len(untitled)} 条缺题名：")
 
     for r in imported:
         print(f"  [{r['id']}] {r['year']} {r['authors'][:28]:28} {r['title'][:48]}  ({r['type']})")
